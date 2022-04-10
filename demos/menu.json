@@ -1,0 +1,21 @@
+{
+    "File": [
+        ["1",   "New",          "CTRL+N",           "New"],
+        ["2",   "Open...",      "CTRL+O",           "Open"],
+        "----------",
+        ["3",   "Save",         "CTRL+S",           "Save"],
+        ["4",   "Save As...",   "SHIFT+CTRL+S",     "SaveAs"]
+    ],
+
+    "Edit": [
+        ["5",   "Undo",         "CTRL+Z",           "Undo"],
+        ["6",   "Redo",         "SHIFT+CTRL+Z",     "Redo"],
+        "----------",
+        ["7",   "Cut",          "CTRL+X",           "Cut"],
+        ["8",   "Copy",         "CTRL+C",           "Copy"],
+        ["9",   "Paste",        "CTRL+V",           "Paste"]
+    ],
+    
+    "Window": [],
+    "Help": []
+}
