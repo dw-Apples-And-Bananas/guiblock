@@ -1,4 +1,27 @@
 import wx
+import json
+
+
+
+
+def JsonToMenu(menubar, file):
+    with open(file) as f:
+        data = json.load(f)
+
+    match = {}
+
+    for m in data:
+        menu = wx.Menu()
+        for i in data[m]:
+            if i == "-"*10:
+                menu.AppendSeparator()
+            else:
+                match[i[0]] = eval(f"menubar.{i[3]}")
+                args = [eval(i[0]), f"&{i[1]}\t{i[2]}"]
+                menu.Append(*args)
+        menubar.Append(menu, m)
+
+    menubar.Bind(wx.EVT_MENU, lambda e: match[str(e.GetId())]())
 
 
 
