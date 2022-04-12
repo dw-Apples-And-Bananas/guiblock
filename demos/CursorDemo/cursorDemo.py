@@ -11,7 +11,7 @@ class Frame(wx.Frame):
         self.panel = wx.Panel(self)
         self.panel.SetBackgroundColour((255,255,255))
 
-        self.cursor = gb.Cursor(self.panel, "cursor", "./demos")
+        self.cursor = gb.Cursor(self.panel, "cursor", "./demos/CursorDemo")
         self.cursor.Link("cursor2", gb.CURSOR_DOWN)
         self.cursor.Bind(self.MouseEvents)
 

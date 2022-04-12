@@ -8,7 +8,7 @@ class MenuBar(wx.MenuBar):
     def __init__(self, frame):
         wx.MenuBar.__init__(self, 0)
 
-        gb.JsonToMenu(self, "./demos/menu.json")
+        gb.JsonToMenu(self, "./demos/MenuDemo/menu.json")
 
 
 
