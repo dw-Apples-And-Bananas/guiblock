@@ -1,4 +1,3 @@
-from re import S
 import wx
 import json
 import os
@@ -23,7 +22,14 @@ def JsonToMenu(menubar, file):
                 menu.Append(*args)
         menubar.Append(menu, m)
 
-    menubar.Bind(wx.EVT_MENU, lambda e: match[str(e.GetId())]())
+    menubar.Bind(wx.EVT_MENU, lambda e: MenuEvent(match, e))
+
+
+def MenuEvent(match, event):
+    try:
+        match[str(event.GetId())]()
+    except:
+        event.Skip()
 
 
 
@@ -40,12 +46,13 @@ class Cursor:
             file += ".ico"
         if not folder.endswith("/") and folder != "":
             folder += "/"
+        self.path = folder + file
 
-        cursor = wx.Cursor(f"{folder}{file}", wx.BITMAP_TYPE_ICO, pos[0], pos[1])
+        cursor = wx.Cursor(self.path, wx.BITMAP_TYPE_ICO, pos[0], pos[1])
         panel.SetCursor(cursor)
         if children:
             for child in panel.Children:
-                child.SetCursor(cursor)
+                child.cursor = self
 
         self.panel, self.folder, self.pos, self.children = panel, folder, pos, children
         self.cursors = {
@@ -53,8 +60,9 @@ class Cursor:
             CURSOR_IDLE:    cursor,
             CURSOR_DOWN:    cursor
         }
-        self.func = False
+        self.currCursor = self.cursors[CURSOR_DEFAULT]
 
+        self.func = False
         self.panel.Bind(wx.EVT_MOUSE_EVENTS, self._MouseEvents)
     
 
@@ -66,9 +74,6 @@ class Cursor:
             pos = self.pos
         cursor = wx.Cursor(f"{self.folder}{file}", wx.BITMAP_TYPE_ICO, pos[0], pos[1])
         self.cursors[id] = cursor
-        if self.children:
-            for child in self.panel.Children:
-                child.SetCursor(cursor)
     
 
 
@@ -86,28 +91,27 @@ class Cursor:
     def _MouseEvents(self, event):
         if self.func != False:
             self.func(event)
+
+        cursor = self.cursors[CURSOR_DEFAULT]
         if event.LeftDown():
             cursor = self.cursors[CURSOR_DOWN]
-            self.panel.SetCursor(cursor)
-            if self.children:
-                for child in self.panel.Children:
-                    child.SetCursor(cursor)
-        elif event.LeftUp():
-            cursor = self.cursors[CURSOR_DEFAULT]
-            self.panel.SetCursor(cursor)
-            if self.children:
-                for child in self.panel.Children:
-                    child.SetCursor(cursor)
         
-        # event.Skip()
+        if cursor != self.currCursor:
+            self.panel.SetCursor(cursor)
+            if self.children:
+                for child in self.panel.Children:
+                    child.cursor = self
 
 
 
 
 
 class Hierarchy(wx.Panel):
-    def __init__(self, panel, pos=(0,0), size=(200,500)):
+    def __init__(self, panel, pos=(0,0), size=(200,500), cursor=None):
         wx.Panel.__init__(self, panel, pos=pos, size=size)
+
+        if cursor != None:
+            self.cursor = Cursor(self, cursor)
 
         self.y = 0
 
@@ -128,7 +132,14 @@ class Hierarchy(wx.Panel):
             self.label.SetPosition((x,self.Size[1]//2-self.label.Size[1]//2))
 
             
-            self.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
+            if hierarchy.cursor != None:
+                self.cursor = Cursor(self, hierarchy.cursor.path)
+                self.cursor.Bind(self.MouseEvents)
+                self.labelCursor = Cursor(self.label, hierarchy.cursor.path)
+                self.labelCursor.Bind(self.MouseEvents)
+            else:
+                self.label.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
+                self.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
 
 
     
@@ -162,8 +173,15 @@ class Hierarchy(wx.Panel):
             self.label.SetPosition((x,self.Size[1]//2-self.label.Size[1]//2))
 
 
-            self.label.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
-            self.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
+            if hierarchy.cursor != None:
+                self.cursor = Cursor(self, hierarchy.cursor.path)
+                self.cursor.Bind(self.MouseEvents)
+                self.labelCursor = Cursor(self.label, hierarchy.cursor.path)
+                self.labelCursor.Bind(self.MouseEvents)
+            else:
+                self.label.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
+                self.Bind(wx.EVT_MOUSE_EVENTS, self.MouseEvents)
+
             self.Bind(wx.EVT_PAINT, self.Paint)
 
 
