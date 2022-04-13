@@ -121,27 +121,53 @@ class Cursor:
 class Hierarchy(wx.Panel):
     def __init__(self, panel, pos=(0,0), size=(200,500), cursor=None):
         wx.Panel.__init__(self, panel, pos=pos, size=size)
+        self.SetColours()
 
         if cursor != None:
             self.cursor = Cursor(self, cursor)
 
         self.y = 0
+        self.selectFunc = None
+
+
+
+    def SetColours(self, background=(255,255,255), 
+                    hover=(255,255,255),
+                    select=(255,255,255),
+                    label=(0,0,0),
+                    label_hover=(0,0,0),
+                    label_select=(0,0,0)):
+        self.colours = {
+            "background": background,
+            "hover": hover,
+            "select": select,
+            "label": label,
+            "label_hover": label_hover,
+            "label_select": label_select
+        }
+        self.SetBackgroundColour(background)
+
+
+
+    def BindSelect(self, func):
+        self.selectFunc = func
 
 
 
 
     class File(wx.Panel):
-        def __init__(self, hierarchy, path, pos=(0,0), size=(200,24), x=20):
+        def __init__(self, hierarchy, path, pos=(0,0), size=(200,22), x=20):
             wx.Panel.__init__(self, hierarchy, pos=pos, size=size)
-            self.SetBackgroundColour((255,255,255))
+            self.SetBackgroundColour(hierarchy.colours["background"])
 
             self.hierarchy, self.path, self.x = hierarchy, path, x
+            self.selected = False
 
 
             self.label = wx.StaticText(self, label=path.split("/")[-1])
             self.label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
-            self.label.SetForegroundColour((0,0,0))
             self.label.SetPosition((x,self.Size[1]//2-self.label.Size[1]//2))
+            self.label.SetForegroundColour(self.hierarchy.colours["label"])
 
             
             if hierarchy.cursor != None:
@@ -157,7 +183,25 @@ class Hierarchy(wx.Panel):
     
         def MouseEvents(self, event):
             if event.LeftDown():
-                os.system(f"open {self.path}")
+                if self.hierarchy.selectFunc != None:
+                    self.hierarchy.selectFunc(self)
+                for child in self.hierarchy.Children:
+                    if type(child) == Hierarchy.File:
+                        child.selected = False
+                        child.label.SetForegroundColour(self.hierarchy.colours["label"])
+                        child.SetBackgroundColour(self.hierarchy.colours["background"])
+                        child.Refresh()
+                self.selected = True
+                self.label.SetForegroundColour(self.hierarchy.colours["label_select"])
+                self.SetBackgroundColour(self.hierarchy.colours["select"])
+
+            if not self.selected:
+                if event.Entering():
+                    self.label.SetForegroundColour(self.hierarchy.colours["label_hover"])
+                    self.SetBackgroundColour(self.hierarchy.colours["hover"])
+                elif event.Leaving() and event.EventObject != self.label:
+                    self.label.SetForegroundColour(self.hierarchy.colours["label"])
+                    self.SetBackgroundColour(self.hierarchy.colours["background"])
 
             self.Refresh()
 
@@ -170,19 +214,20 @@ class Hierarchy(wx.Panel):
 
 
     class Folder(wx.Panel):
-        def __init__(self, hierarchy, path, parent=None, pos=(0,0), size=(200,24), x=20):
+        def __init__(self, hierarchy, path, parent=None, pos=(0,0), size=(200,22), x=20):
             wx.Panel.__init__(self, hierarchy, pos=pos, size=size)
-            self.SetBackgroundColour((255,255,255))
+            self.SetBackgroundColour(hierarchy.colours["background"])
 
             self.hierarchy, self.path, self.parent, self.x = hierarchy, path, parent, x
             self.children = self.ListChildren()
             self.expanded = False
+            self.hovering = False
 
 
             self.label = wx.StaticText(self, label=self.path.split("/")[-1])
             self.label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
-            self.label.SetForegroundColour((0,0,0))
             self.label.SetPosition((x,self.Size[1]//2-self.label.Size[1]//2))
+            self.label.SetForegroundColour(self.hierarchy.colours["label"])
 
 
             if hierarchy.cursor != None:
@@ -204,6 +249,15 @@ class Hierarchy(wx.Panel):
                     self.Collapse()
                 else:
                     self.Expand()
+            
+            if event.Entering():
+                self.hovering = True
+                self.label.SetForegroundColour(self.hierarchy.colours["label_hover"])
+                self.SetBackgroundColour(self.hierarchy.colours["hover"])
+            elif event.Leaving() and event.EventObject != self.label:
+                self.hovering = False
+                self.label.SetForegroundColour(self.hierarchy.colours["label"])
+                self.SetBackgroundColour(self.hierarchy.colours["background"])
 
             self.Refresh()
 
@@ -301,7 +355,10 @@ class Hierarchy(wx.Panel):
             y = size[1]/2
 
             if gc:
-                gc.SetPen(wx.Pen((0,0,0)))
+                if self.hovering:
+                    gc.SetPen(wx.Pen(self.hierarchy.colours["label_hover"]))
+                else:
+                    gc.SetPen(wx.Pen(self.hierarchy.colours["label"]))
                 if self.expanded:
                     path = gc.CreatePath()
                     path.MoveToPoint(x-13, y-2)
