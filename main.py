@@ -5,6 +5,18 @@ import os
 
 
 
+
+def print(*args):
+    arg = ""
+    space = " " if len(args) > 1 else ""
+    for a in args:
+        arg += f"{a}{space}"
+    os.system(f'echo "{arg}"')
+
+
+
+
+
 def JsonToMenu(menubar, file):
     with open(file) as f:
         data = json.load(f)
